@@ -1,53 +1,55 @@
 #!/bin/sh
 
-# 설정 변수
+WORK_DIR=$(pwd)
 DEFCONFIG="wt2837_defconfig"
 IMAGE="arch/arm64/boot/Image"
 DTB="arch/arm64/boot/dts/broadcom/wt2837.dtb"
 TFTP_DIR="/tftpboot"
 
-# 공통 함수
 build_image() {
+    cd $WORK_DIR/linux-6.12.34
     echo "Building Image..."
     make Image -j$(nproc)
+    cp "$IMAGE" "$TFTP_DIR/"
+    echo "Done"
 }
 
 build_dtbs() {
+    cd $WORK_DIR/linux-6.12.34
     echo "Building Device Tree..."
     make dtbs -j$(nproc)
+    cp "$DTB" "$TFTP_DIR/"
+    echo "Done"
 }
 
-copy_to_tftp() {
-    echo "Copying files to $TFTP_DIR..."
-    sudo cp "$IMAGE" "$TFTP_DIR/"
-    sudo cp "$DTB" "$TFTP_DIR/"
-    echo "Done."
+build_rootfs(){
+    cd $WORK_DIR/newrootfs
+    echo "Building rootfs..."
+    sudo ./mkext2.sh
+    cp ext2img.gz "$TFTP_DIR/"
+    echo "Done"
 }
 
-cd linux-6.12.34
 case "$1" in
     "")
         echo "Full build (defconfig + Image + DTB)"
         make "$DEFCONFIG"
         build_image
         build_dtbs
-        copy_to_tftp
+	build_rootfs
         ;;
     kernel)
 	make "$DEFCONFIG"
         build_image
-        echo "Copying Image to $TFTP_DIR..."
-        sudo cp "$IMAGE" "$TFTP_DIR/"
-        echo "Done."
         ;;
     dtbs)
         build_dtbs
-        echo "Copying DTB to $TFTP_DIR..."
-        sudo cp "$DTB" "$TFTP_DIR/"
-        echo "Done."
         ;;
+    rootfs)
+	build_rootfs
+	;;
     *)
-        echo "Usage: $0 [kernel | dtbs]"
+        echo "Usage: $0 [kernel | dtbs | rootfs]"
         exit 1
         ;;
 esac
