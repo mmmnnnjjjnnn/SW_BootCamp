@@ -36,7 +36,7 @@ case "$1" in
         make "$DEFCONFIG"
         build_image
         build_dtbs
-	build_rootfs
+	# build_rootfs
         ;;
     kernel)
 	make "$DEFCONFIG"
